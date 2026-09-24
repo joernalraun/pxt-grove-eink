@@ -1,0 +1,24 @@
+{
+    "name": "grove-eink-154",
+    "version": "0.1.0",
+    "description": "Grove Triple Color E-Ink Display 1.54\" (152x152, schwarz/weiß/rot) für Calliope mini",
+    "license": "MIT",
+    "dependencies": {
+        "core": "*"
+    },
+    "files": [
+        "README.md",
+        "font.ts",
+        "main.ts"
+    ],
+    "testFiles": [
+        "test.ts"
+    ],
+    "targetVersions": {
+        "target": "*"
+    },
+    "supportedTargets": [
+        "calliopemini"
+    ],
+    "preferredEditor": "blocksprj"
+}
