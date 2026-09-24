@@ -3,7 +3,7 @@
 MakeCode-Erweiterung für das **Seeed Grove – Triple Color E-Ink Display 1.54"**
 (152 × 152 Pixel, schwarz / weiß / rot, Panel GDEW0154Z17).
 
-Das Grove-Modul hat einen eigenen Controller. Der Calliope schickt ihm das
+Das Grove-Modul hat einen eigenen Controller. Der Calliope mini schickt ihm das
 fertige Bild über die serielle Schnittstelle (UART, 230400 Baud). Die
 Erweiterung basiert auf dem Arduino-Beispiel von Seeed Studio.
 
@@ -20,7 +20,7 @@ Das Display am **Grove-Anschluss A1** des Calliope mini 3 einstecken
 
 1. **verbinden** – einmal beim Start.
 2. **zeichnen** – Text, Linien, Rechtecke, Kreise, LED-Bilder.
-   Das passiert nur im Speicher des Calliope, auf dem Display ändert sich noch nichts.
+   Das passiert nur im Speicher des Calliope mini, auf dem Display ändert sich noch nichts.
 3. **Anzeige aktualisieren** – überträgt das Bild. Das dauert ca. 8 s,
    danach flackert das Display ein paar Sekunden, bis das Bild steht.
 
@@ -54,16 +54,12 @@ eInk.update()
 | *Mehr:* letzte Aktualisierung erfolgreich | `wahr`, wenn das Display geantwortet hat |
 | *Mehr:* Farbe von Pixel | Farbe im Bildspeicher abfragen |
 
-## Als Erweiterung laden
-
-Dieses Verzeichnis in ein GitHub-Repository hochladen und in MakeCode
-(makecode.calliope.cc) unter *Erweiterungen* die Repository-URL eingeben.
 
 ## Lizenz
 
 MIT – basiert auf
 [Seeed-Studio/Grove_Triple_Color_E-lnk_1.54](https://github.com/Seeed-Studio/Grove_Triple_Color_E-lnk_1.54) (MIT).
 
-#### Metadaten (für Suche, Rendering)
+#### Metadaten
 
 * for PXT/calliopemini
