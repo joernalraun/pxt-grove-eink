@@ -21,6 +21,25 @@ enum EInkColor {
     Red = 2
 }
 
+enum EInkFont {
+    //% block="Standard 5x7"
+    Standard = 0,
+    //% block="Roboto 12 px"
+    Roboto12 = 1,
+    //% block="Roboto 16 px"
+    Roboto16 = 2,
+    //% block="Roboto 24 px"
+    Roboto24 = 3,
+    //% block="Roboto 32 px"
+    Roboto32 = 4,
+    //% block="Roboto Mono 12 px"
+    RobotoMono12 = 5,
+    //% block="Roboto Mono 16 px"
+    RobotoMono16 = 6,
+    //% block="Roboto Mono 24 px"
+    RobotoMono24 = 7
+}
+
 //% color="#3a3a3a" weight=90 icon="" block="E-Ink"
 //% groups='["Start", "Zeichnen", "Text"]'
 namespace eInk {
@@ -282,6 +301,44 @@ namespace eInk {
                     fillRect(x + ix * size, y + iy * size, size, size, color)
     }
 
+    /**
+     * Zeichnet eine Grafik, die mit dem Bild-Konverter erstellt wurde.
+     * Format (Base64): Byte 0 = Version (1), Byte 1 = Breite, Byte 2 = Höhe,
+     * danach Schwarz-Ebene und Rot-Ebene (je Zeile auf volle Bytes aufgefüllt,
+     * MSB zuerst, Bit 1 = gesetzt). Beide Bits gesetzt = weiß, keins = transparent.
+     * @param data Grafik-Code aus dem Bild-Konverter
+     * @param size Vergrößerungsfaktor
+     */
+    //% blockId=eink_bitmap
+    //% block="zeichne Grafik %data x %x y %y Größe %size"
+    //% x.min=0 x.max=151 y.min=0 y.max=151
+    //% size.min=1 size.max=10 size.defl=1
+    //% group="Zeichnen" weight=45 inlineInputMode=inline
+    export function drawBitmap(data: string, x: number, y: number, size: number = 1): void {
+        const buf = Buffer.fromBase64(data)
+        if (!buf || buf.length < 3 || buf[0] != 1) return
+        const w = buf[1]
+        const h = buf[2]
+        const rowBytes = (w + 7) >> 3
+        const planeSize = rowBytes * h
+        if (buf.length < 3 + 2 * planeSize) return
+        x |= 0
+        y |= 0
+        size = Math.max(1, size | 0)
+        for (let py = 0; py < h; py++) {
+            for (let px = 0; px < w; px++) {
+                const i = py * rowBytes + (px >> 3)
+                const mask = 0x80 >> (px & 7)
+                const b = buf[3 + i] & mask
+                const r = buf[3 + planeSize + i] & mask
+                if (!b && !r) continue
+                const color = b && r ? EInkColor.White : (b ? EInkColor.Black : EInkColor.Red)
+                if (size == 1) setPixel(x + px, y + py, color)
+                else fillRect(x + px * size, y + py * size, size, size, color)
+            }
+        }
+    }
+
     function glyphIndex(code: number): number {
         if (code >= 32 && code <= 126) return code - 32
         switch (code) {
@@ -297,9 +354,66 @@ namespace eInk {
         return 31 // '?'
     }
 
+    // null = Standardschrift 5x7. Die Roboto-Daten werden nur ins Programm
+    // übernommen, wenn "setze Schrift" benutzt wird (wichtig für Calliope mini 1/2).
+    let currentFont: Buffer = null
+
     /**
-     * Schreibt Text in den Bildspeicher. Ein Zeichen ist 6 x 8 Pixel groß
-     * (mal Größe). Zu lange Texte werden in die nächste Zeile umgebrochen.
+     * Wählt die Schrift für alle folgenden Text-Blöcke.
+     * Roboto-Schriften sehen bei Größe 1 am besten aus und benötigen
+     * den Calliope mini 3 (zu groß für mini 1/2).
+     */
+    //% blockId=eink_set_font
+    //% block="setze Schrift auf %font"
+    //% font.defl=EInkFont.Roboto16
+    //% group="Text" weight=110
+    export function setFont(font: EInkFont): void {
+        switch (font) {
+            case EInkFont.Roboto12: currentFont = _roboto_12(); break
+            case EInkFont.Roboto16: currentFont = _roboto_16(); break
+            case EInkFont.Roboto24: currentFont = _roboto_24(); break
+            case EInkFont.Roboto32: currentFont = _roboto_32(); break
+            case EInkFont.RobotoMono12: currentFont = _roboto_mono_12(); break
+            case EInkFont.RobotoMono16: currentFont = _roboto_mono_16(); break
+            case EInkFont.RobotoMono24: currentFont = _roboto_mono_24(); break
+            default: currentFont = null
+        }
+    }
+
+    function fontData(): Buffer {
+        return currentFont
+    }
+
+    // Offset der Zeichendaten in einer Roboto-Schrift
+    function glyphOffset(font: Buffer, code: number): number {
+        const g = glyphIndex(code)
+        return font[4 + 2 * g] | (font[5 + 2 * g] << 8)
+    }
+
+    function charAdvance(font: Buffer, code: number, size: number): number {
+        if (!font) return 6 * size
+        return font[glyphOffset(font, code)] * size
+    }
+
+    function lineHeight(font: Buffer, size: number): number {
+        if (!font) return 8 * size
+        return (font[0] + 1) * size
+    }
+
+    function wordWidth(font: Buffer, text: string, start: number, size: number): number {
+        let w = 0
+        for (let n = start; n < text.length; n++) {
+            const code = text.charCodeAt(n)
+            if (code == 32 || code == 10) break
+            w += charAdvance(font, code, size)
+        }
+        return w
+    }
+
+    /**
+     * Schreibt Text in den Bildspeicher, in der mit "setze Schrift" gewählten
+     * Schrift (Standard: 5x7 Pixel). Zu lange Zeilen werden am Wortende
+     * umgebrochen, "\n" beginnt eine neue Zeile.
      * @param text der Text
      * @param size Vergrößerungsfaktor 1..10
      */
@@ -312,24 +426,44 @@ namespace eInk {
     //% group="Text" weight=100 inlineInputMode=inline
     export function showText(text: string, x: number, y: number, size: number, color: EInkColor): void {
         size = Math.max(1, size | 0)
+        const font = fontData()
         const startX = x | 0
+        const lh = lineHeight(font, size)
         let cx = startX
         let cy = y | 0
-        const charW = 6 * size
-        const charH = 8 * size
+        let wordStart = true
+        let autoWrapped = false
         for (let n = 0; n < text.length; n++) {
             const code = text.charCodeAt(n)
-            if (code == 10) { // Zeilenumbruch "\n"
+            if (code == 10) { // Zeilenumbruch
                 cx = startX
-                cy += charH
+                cy += lh
+                wordStart = true
+                autoWrapped = false
                 continue
             }
-            if (cx + 5 * size > WIDTH) {
-                cx = startX
-                cy += charH
+            if (code == 32) {
+                wordStart = true
+                if (autoWrapped && cx == startX) continue // nach Umbruch kein Leerzeichen am Zeilenanfang
+                cx += charAdvance(font, code, size)
+                continue
             }
-            drawChar(code, cx, cy, size, color)
-            cx += charW
+            const adv = charAdvance(font, code, size)
+            // ganzes Wort in die nächste Zeile, wenn es nicht mehr passt
+            if (wordStart && cx > startX && cx + wordWidth(font, text, n, size) > WIDTH) {
+                cx = startX
+                cy += lh
+                autoWrapped = true
+            } else if (cx > startX && cx + adv > WIDTH) {
+                // Wort länger als eine Zeile: zeichenweise umbrechen
+                cx = startX
+                cy += lh
+                autoWrapped = true
+            }
+            wordStart = false
+            if (font) drawFontChar(font, code, cx, cy, size, color)
+            else drawChar(code, cx, cy, size, color)
+            cx += adv
         }
     }
 
@@ -347,7 +481,7 @@ namespace eInk {
     }
 
     /**
-     * Breite eines Textes in Pixeln – nützlich zum Zentrieren.
+     * Breite eines Textes in Pixeln (in der aktuellen Schrift) – nützlich zum Zentrieren.
      */
     //% blockId=eink_text_width
     //% block="Breite von Text %text bei Größe %size"
@@ -355,8 +489,29 @@ namespace eInk {
     //% group="Text" weight=80
     export function textWidth(text: string, size: number): number {
         size = Math.max(1, size | 0)
-        if (text.length == 0) return 0
-        return (text.length * 6 - 1) * size
+        const font = fontData()
+        let w = 0
+        let widest = 0
+        for (let n = 0; n < text.length; n++) {
+            const code = text.charCodeAt(n)
+            if (code == 10) { widest = Math.max(widest, w); w = 0; continue }
+            w += charAdvance(font, code, size)
+        }
+        widest = Math.max(widest, w)
+        // Standardschrift: letzter Zeichenabstand zählt nicht mit
+        if (!font && widest > 0) widest -= size
+        return widest
+    }
+
+    /**
+     * Höhe einer Textzeile in Pixeln (in der aktuellen Schrift).
+     */
+    //% blockId=eink_text_height
+    //% block="Zeilenhöhe bei Größe %size"
+    //% size.min=1 size.max=10 size.defl=1
+    //% group="Text" weight=70
+    export function textHeight(size: number): number {
+        return lineHeight(fontData(), Math.max(1, size | 0))
     }
 
     function drawChar(code: number, x: number, y: number, size: number, color: EInkColor) {
@@ -368,6 +523,25 @@ namespace eInk {
                 if (bits & (1 << row)) {
                     if (size == 1) setPixel(x + col, y + row, color)
                     else fillRect(x + col * size, y + row * size, size, size, color)
+                }
+            }
+        }
+    }
+
+    function drawFontChar(font: Buffer, code: number, x: number, y: number, size: number, color: EInkColor) {
+        const h = font[0]
+        const bpc = font[1]
+        const o = glyphOffset(font, code)
+        const w = font[o + 1]
+        let xoff = font[o + 2]
+        if (xoff > 127) xoff -= 256
+        for (let col = 0; col < w; col++) {
+            const base = o + 3 + col * bpc
+            const px = x + (xoff + col) * size
+            for (let row = 0; row < h; row++) {
+                if (font[base + (row >> 3)] & (1 << (row & 7))) {
+                    if (size == 1) setPixel(px, y + row, color)
+                    else fillRect(px, y + row * size, size, size, color)
                 }
             }
         }

@@ -9,6 +9,8 @@
     "files": [
         "README.md",
         "font.ts",
+        "fonts_roboto.ts",
+        "OFL-Roboto.txt",
         "main.ts"
     ],
     "testFiles": [

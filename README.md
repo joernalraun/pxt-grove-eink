@@ -49,16 +49,53 @@ eInk.update()
 | fülle Bildschirm mit … | alles weiß, schwarz oder rot |
 | zeichne Pixel / Linie / Rechteck / Kreis | Grafik, Koordinaten 0…151 |
 | zeichne Bild … Größe … | 5×5-LED-Bild vergrößert zeichnen |
-| schreibe Text / Zahl … Größe … | 5×7-Schrift, Größe 1 = 6×8 Pixel pro Zeichen, `\n` = neue Zeile, Umlaute und ° werden unterstützt |
+| setze Schrift auf … | Standard 5×7, Roboto 12/16/24/32 px oder Roboto Mono 12/16/24 px |
+| schreibe Text / Zahl … Größe … | Text in der gewählten Schrift, Umbruch am Wortende, `\n` = neue Zeile, Umlaute und ° werden unterstützt |
 | Breite von Text | Textbreite in Pixeln, z. B. zum Zentrieren |
+| Zeilenhöhe | Höhe einer Textzeile in der aktuellen Schrift |
+| zeichne Grafik … Größe … | eigenes Bild (Logo, Foto …) aus dem Bild-Konverter |
 | *Mehr:* letzte Aktualisierung erfolgreich | `wahr`, wenn das Display geantwortet hat |
 | *Mehr:* Farbe von Pixel | Farbe im Bildspeicher abfragen |
+
+## Schriften
+
+| Schrift | Zeilenhöhe | Hinweis |
+|---|---|---|
+| Standard 5×7 | 8 px | Voreinstellung, lässt sich gut mit „Größe“ vergrößern |
+| Roboto 12 / 16 / 24 / 32 px | 16 / 20 / 27 / 37 px | proportional, am besten mit Größe 1 |
+| Roboto Mono 12 / 16 / 24 px | 16 / 19 / 28 px | alle Zeichen gleich breit, gut für Zahlen und Tabellen |
+
+```typescript
+eInk.setFont(EInkFont.Roboto24)
+eInk.showText("Hallo!", 10, 10, 1, EInkColor.Black)
+```
+
+Die Roboto-Schriften belegen zusammen ca. 25 KB und werden nur eingebunden,
+wenn „setze Schrift“ benutzt wird. Sie brauchen den **Calliope mini 3** –
+für Calliope mini 1/2 ist das Programm damit zu groß; dort nur die Standardschrift nutzen.
+
+## Eigene Bilder
+
+Mit dem Bild-Konverter [`tools/bildkonverter.html`](tools/bildkonverter.html)
+(im Browser öffnen) lässt sich jedes PNG/JPG – z. B. ein Logo – in eine
+Grafik für das Display umwandeln. Rote Bildbereiche werden rot, dunkle schwarz,
+helle weiß (wahlweise durchsichtig). Der Konverter erzeugt direkt den Code:
+
+```typescript
+eInk.drawBitmap("AQoD/8AAAFVAAAD/wFVA", 8, 140, 2)
+```
+
+Der Grafik-Code ist Base64: Byte 0 = Version (1), Byte 1 = Breite, Byte 2 = Höhe,
+danach Schwarz-Ebene und Rot-Ebene (Bit gesetzt = Farbe, beide gesetzt = weiß,
+keins = durchsichtig; jede Zeile auf volle Bytes aufgefüllt, MSB zuerst).
+Tipp: Große Grafiken (z. B. 152 × 152) belegen etwa 7,7 KB Text im Programm.
 
 
 ## Lizenz
 
 MIT – basiert auf
 [Seeed-Studio/Grove_Triple_Color_E-lnk_1.54](https://github.com/Seeed-Studio/Grove_Triple_Color_E-lnk_1.54) (MIT).
+Roboto und Roboto Mono: © The Roboto Project Authors, SIL Open Font License 1.1 (siehe `OFL-Roboto.txt`).
 
 #### Metadaten
 
