@@ -1,4 +1,5 @@
 <title>E-Ink Bildkonverter</title>
+<meta charset="UTF-8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -138,7 +139,7 @@ button.ghost { background: transparent; color: var(--ink); border: 1px solid var
 <div class="wrap">
   <header>
     <h1>E-Ink Bildkonverter</h1>
-    <p>Wandelt ein Bild in eine Grafik für das Grove E-Ink Display 1.54″ (152 × 152, schwarz/weiß/rot). Der erzeugte Code passt in den Block <code>zeichne Grafik</code> der Calliope-Erweiterung.</p>
+    <p>Wandelt ein Bild in eine Grafik für das Grove E-Ink Display 1.54″ (152 × 152, schwarz/weiß/rot). Der erzeugte Code passt in den Block <code>zeichne Grafik</code> der Calliope mini-Erweiterung.</p>
   </header>
 
   <div class="layout">
@@ -220,7 +221,7 @@ button.ghost { background: transparent; color: var(--ink); border: 1px solid var
         <textarea id="b64" readonly aria-label="Grafik-Code"></textarea>
       </div>
       <div class="hint">
-        So kommt das Bild auf den Calliope:
+        So kommt das Bild auf den Calliope mini:
         <ol>
           <li>In MakeCode auf <strong>JavaScript</strong> umschalten und den Code nach <code>eInk.clear(…)</code> einfügen – oder</li>
           <li>den Block <strong>zeichne Grafik</strong> nehmen und den Grafik-Code in das Textfeld einfügen.</li>
